@@ -1,3 +1,6 @@
+"use client";
+import { FormError } from "@/components/auth/FormError";
+import { FormSuccess } from "@/components/auth/FormSuccess";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -8,12 +11,45 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
+import { useState, useTransition } from "react";
+import { useForm } from "react-hook-form";
 import { FiLock, FiMail } from "react-icons/fi"; // Importing icons for email and lock
+import { z } from "zod";
+import { loginSchema } from "../../../../../schemas";
+import { login } from "../../actions/login";
 
 export function LoginForm() {
+  const [error, setError] = useState<string | undefined>(""); // Error state
+  const [success, setSuccess] = useState<string | undefined>(""); // Success state
+  const [isPending, startTransition] = useTransition();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const onSubmit = (data: z.infer<typeof loginSchema>) => {
+    setError("");
+    setSuccess("");
+    startTransition(() => {
+      login(data).then((values) => {
+        setError(values.error);
+        setSuccess(values.success);
+      });
+    });
+    console.log(data);
+  };
+
   return (
-    <Card className="mx-auto max-w-sm mt-3 shadow-lg rounded-lg bg-white">
+    <Card className="mx-auto max-w-sm mt-3 shadow-lg rounded-lg bg-white md:max-w-md lg:max-w-lg">
       <CardHeader>
         <CardTitle className="font-bold text-2xl text-center my-1">
           Technautix
@@ -24,22 +60,24 @@ export function LoginForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
           {/* Email Field */}
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
             <div className="relative">
-              {" "}
-              {/* Added relative positioning */}
-              <FiMail className="absolute left-3 top-3 text-neutral-400" />{" "}
-              {/* Absolute positioning for the icon */}
+              <FiMail className="absolute left-3 top-3 text-neutral-400" />
               <Input
                 id="email"
                 type="email"
                 placeholder="xyz@example.com"
+                disabled={isPending}
                 required
-                className="pl-10 border focus:outline-none focus:ring-0 placeholder:text-neutral-400" // Added padding-left to avoid overlap
+                {...register("email")}
+                className="pl-10 border focus:outline-none focus:ring-0 placeholder:text-neutral-400"
               />
+              {errors.email && (
+                <FormError message={errors.email.message} /> // Use FormError component
+              )}
             </div>
           </div>
           {/* Password Field */}
@@ -54,35 +92,42 @@ export function LoginForm() {
               </Link>
             </div>
             <div className="relative">
-              {" "}
-              {/* Added relative positioning */}
-              <FiLock className="absolute left-3 top-3 text-neutral-400" />{" "}
-              {/* Absolute positioning for the icon */}
+              <FiLock className="absolute left-3 top-3 text-neutral-400" />
               <Input
                 id="password"
                 type="password"
                 placeholder="Enter your password"
+                disabled={isPending}
                 required
-                className="pl-10 border focus:outline-none focus:ring-0 placeholder:text-neutral-400" // Added padding-left to avoid overlap
+                {...register("password")}
+                className="pl-10 border focus:outline-none focus:ring-0 placeholder:text-neutral-400"
               />
+              {errors.password && (
+                <FormError message={errors.password.message} /> // Use FormError component
+              )}
             </div>
           </div>
-          {/* Login Button */}
+          {/* Display Success or Error Messages */}
+          {success && <FormSuccess message={success} />}
+          {error && <FormError message={error} />}
           <Button
             type="submit"
             className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+            disabled={isPending}
           >
             Login
           </Button>
           <Button
             variant="outline"
             className="w-full mt-2 border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white"
+            onClick={() => console.log("Google login clicked")} // Placeholder for Google login action
           >
             Login with Google
           </Button>
-        </div>
+        </form>
+
         <div className="mt-4 text-center text-sm text-neutral-500">
-          Don t have an account?{" "}
+          Don’t have an account?{" "}
           <Link
             href="/auth/register"
             className="underline text-blue-500 hover:text-blue-600"

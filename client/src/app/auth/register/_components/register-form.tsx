@@ -8,10 +8,29 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
+import { useForm } from "react-hook-form";
 import { FiLock, FiMail } from "react-icons/fi"; // Importing icons for email and lock
+import { registerSchema } from "../../../../../schemas";
 
 export function RegisterForm() {
+  const {
+    handleSubmit,
+    register,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+      confirmPassword: "",
+    },
+  });
+  const onSubmit = (data) => {
+    console.log(data);
+  };
+
   return (
     <Card className="mx-auto max-w-sm mt-3 shadow-lg rounded-lg bg-white">
       <CardHeader>
@@ -24,58 +43,70 @@ export function RegisterForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
           {/* Email Field */}
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
             <div className="relative">
-              {" "}
-              {/* Added relative positioning */}
-              <FiMail className="absolute left-3 top-3 text-neutral-400" />{" "}
-              {/* Absolute positioning for the icon */}
+              <FiMail className="absolute left-3 top-3 text-neutral-400" />
               <Input
                 id="email"
                 type="email"
                 placeholder="xyz@example.com"
                 required
-                className="pl-10 border focus:outline-none focus:ring-0 placeholder:text-neutral-400" // Added padding-left to avoid overlap
+                {...register("email")} // Connect input to form validation
+                className="pl-10 border focus:outline-none focus:ring-0 placeholder:text-neutral-400"
               />
             </div>
+            {errors.email && (
+              <p className="mt-1 text-red-500 text-sm">
+                {errors.email.message}
+              </p>
+            )}
           </div>
+
           {/* Password Field */}
           <div className="grid gap-2">
             <Label htmlFor="password">Password</Label>
             <div className="relative">
-              {" "}
-              {/* Added relative positioning */}
-              <FiLock className="absolute left-3 top-3 text-neutral-400" />{" "}
-              {/* Absolute positioning for the icon */}
+              <FiLock className="absolute left-3 top-3 text-neutral-400" />
               <Input
                 id="password"
                 type="password"
                 placeholder="Enter your password"
                 required
-                className="pl-10 border focus:outline-none focus:ring-0 placeholder:text-neutral-400" // Added padding-left to avoid overlap
+                {...register("password")} // Connect input to form validation
+                className="pl-10 border focus:outline-none focus:ring-0 placeholder:text-neutral-400"
               />
             </div>
+            {errors.password && (
+              <p className="mt-1 text-red-500 text-sm">
+                {errors.password.message}
+              </p>
+            )}
           </div>
+
           {/* Confirm Password Field */}
           <div className="grid gap-2">
             <Label htmlFor="confirmPassword">Confirm Password</Label>
             <div className="relative">
-              {" "}
-              {/* Added relative positioning */}
-              <FiLock className="absolute left-3 top-3 text-neutral-400" />{" "}
-              {/* Absolute positioning for the icon */}
+              <FiLock className="absolute left-3 top-3 text-neutral-400" />
               <Input
                 id="confirmPassword"
                 type="password"
                 placeholder="Re-enter your password"
                 required
-                className="pl-10 border focus:outline-none focus:ring-0 placeholder:text-neutral-400" // Added padding-left to avoid overlap
+                {...register("confirmPassword")} // Connect input to form validation
+                className="pl-10 border focus:outline-none focus:ring-0 placeholder:text-neutral-400"
               />
             </div>
+            {errors.confirmPassword && (
+              <p className="mt-1 text-red-500 text-sm">
+                {errors.confirmPassword.message}
+              </p>
+            )}
           </div>
+
           {/* Sign Up Button */}
           <Button
             type="submit"
@@ -89,7 +120,7 @@ export function RegisterForm() {
           >
             Sign Up with Google
           </Button>
-        </div>
+        </form>
         <div className="mt-4 text-center text-sm text-neutral-500">
           Already have an account?{" "}
           <Link
