@@ -1,4 +1,5 @@
 "use client";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -10,6 +11,7 @@ import {
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "react-hot-toast";
+import { uploadInvoiceAction } from "../actions/uploadInvoiceAction";
 import { validateFile } from "../schemas/fileValidationSchema";
 
 interface FileWithPreview {
@@ -29,27 +31,42 @@ export default function UploadInvoice() {
       const validationResult = validateFile(file);
 
       if (validationResult === true) {
-        // File is valid
         validFiles.push({
           file,
           preview: URL.createObjectURL(file),
           progress: 0,
         });
       } else {
-        // File validation failed
         toast.error(validationResult);
       }
     });
 
-    // Update state with valid files only
     setFiles((prev) => [...prev, ...validFiles]);
   }, []);
 
-  const handleUpload = () => {
-    const updatedFiles = files.map((fileObj) => ({
-      ...fileObj,
-      progress: 100, // Simulate upload completion for demo
-    }));
+  const handleUpload = async () => {
+    const updatedFiles = await Promise.all(
+      files.map(async (fileObj) => {
+        try {
+          const response = await uploadInvoiceAction(fileObj.file);
+          if (response.success) {
+            toast.success(`File ${fileObj.file.name} uploaded successfully!`);
+            console.log("FIle uploaded Successfully");
+            return { ...fileObj, progress: 100 };
+          } else {
+            toast.error(
+              `Failed to upload ${fileObj.file.name}: ${response.message}`
+            );
+            return { ...fileObj, progress: 0 };
+          }
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (error) {
+          toast.error(`Error uploading ${fileObj.file.name}`);
+          return { ...fileObj, progress: 0 };
+        }
+      })
+    );
+
     setFiles(updatedFiles);
   };
 
@@ -66,10 +83,10 @@ export default function UploadInvoice() {
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-50">
       <Card className="max-w-md w-full bg-white shadow-md rounded-lg p-6">
-        <CardHeader className="text-lg font-semibold  m-1">
+        <CardHeader className="text-lg font-semibold m-1">
           Upload and Attach Files
         </CardHeader>
-        <CardDescription className=" mb-4 text-gray-600">
+        <CardDescription className="mb-4 text-gray-600">
           Upload and attach files to this invoice.
         </CardDescription>
         <CardContent>
