@@ -1,3 +1,5 @@
+// UploadInvoice.tsx
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -8,37 +10,31 @@ import {
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
+import axios from "axios";
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "react-hot-toast";
-import { uploadInvoiceAction } from "../actions/uploadInvoiceAction";
-import { validateFile } from "../schemas/fileValidationSchema";
 
 interface FileWithPreview {
   file: File;
   preview: string;
   progress: number;
+  filePath?: string; // Add a filePath to store the server path for the uploaded file
 }
 
 export default function UploadInvoice() {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
+  const [extractedData, setExtractedData] = useState<string | null>(null);
   const maxFileSize = 50 * 1024 * 1024; // 50 MB
 
-  // Handle file drop with validation
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const validFiles: FileWithPreview[] = [];
     acceptedFiles.forEach((file) => {
-      const validationResult = validateFile(file);
-
-      if (validationResult === true) {
-        validFiles.push({
-          file,
-          preview: URL.createObjectURL(file),
-          progress: 0,
-        });
-      } else {
-        toast.error(validationResult);
-      }
+      validFiles.push({
+        file,
+        preview: URL.createObjectURL(file),
+        progress: 0,
+      });
     });
 
     setFiles((prev) => [...prev, ...validFiles]);
@@ -48,18 +44,50 @@ export default function UploadInvoice() {
     const updatedFiles = await Promise.all(
       files.map(async (fileObj) => {
         try {
-          const response = await uploadInvoiceAction(fileObj.file);
-          if (response.success) {
+          const formData = new FormData();
+          formData.append("file", fileObj.file);
+
+          const response = await axios.post(
+            "/api/features/invoice-management/upload",
+            formData,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+              onUploadProgress: (progressEvent) => {
+                if (progressEvent.total) {
+                  const progress = Math.round(
+                    (progressEvent.loaded * 100) / progressEvent.total
+                  );
+                  setFiles((prevFiles) =>
+                    prevFiles.map((item) =>
+                      item.file.name === fileObj.file.name
+                        ? { ...item, progress }
+                        : item
+                    )
+                  );
+                }
+              },
+            }
+          );
+
+          if (response.data.success) {
             toast.success(`File ${fileObj.file.name} uploaded successfully!`);
-            console.log("FIle uploaded Successfully");
-            return { ...fileObj, progress: 100 };
+
+            const updatedFileObj = {
+              ...fileObj,
+              progress: 100,
+              filePath: response.data.filePath, // Update with the server response path
+            };
+
+            // Extract data after upload
+            await handleDataExtraction(updatedFileObj);
+
+            return updatedFileObj;
           } else {
-            toast.error(
-              `Failed to upload ${fileObj.file.name}: ${response.message}`
-            );
+            toast.error(`Failed to upload ${fileObj.file.name}`);
             return { ...fileObj, progress: 0 };
           }
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
           toast.error(`Error uploading ${fileObj.file.name}`);
           return { ...fileObj, progress: 0 };
@@ -68,6 +96,28 @@ export default function UploadInvoice() {
     );
 
     setFiles(updatedFiles);
+  };
+
+  const handleDataExtraction = async (fileObj: FileWithPreview) => {
+    try {
+      if (!fileObj.filePath) return;
+
+      const response = await axios.post(
+        "/api/features/invoice-management/extract",
+        {
+          filePath: fileObj.filePath,
+        }
+      );
+
+      if (response.data.success) {
+        setExtractedData(response.data.extractedData); // Store extracted data
+        toast.success("Data extracted successfully!");
+      } else {
+        toast.error("Failed to extract data.");
+      }
+    } catch (error) {
+      toast.error("Error extracting data.");
+    }
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -104,6 +154,8 @@ export default function UploadInvoice() {
             )}
             <p className="text-sm">Supported formats: JPEG, PNG, PDF, DOC</p>
           </div>
+
+          {/* File preview with upload progress */}
           <div className="space-y-2">
             {files.map((fileObj, index) => (
               <div
@@ -134,6 +186,7 @@ export default function UploadInvoice() {
             ))}
           </div>
         </CardContent>
+
         <CardFooter className="flex justify-between">
           <Button
             size="sm"
@@ -151,6 +204,16 @@ export default function UploadInvoice() {
           </Button>
         </CardFooter>
       </Card>
+
+      {/* Display the extracted data */}
+      <div className="m-4">
+        {extractedData && (
+          <div className="gap-4 flex flex-col mt-4 p-4 border rounded-md bg-gray-100 h-auto">
+            <h3 className="font-semibold">Extracted Data</h3>
+            <pre>{extractedData}</pre>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

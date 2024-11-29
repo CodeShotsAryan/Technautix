@@ -1,32 +1,29 @@
-// import formidable from 'formidable';
-// import { NextApiRequest, NextApiResponse } from 'next';
-// import nextConnect from 'next-connect';
+import fs from "fs";
+import path from "path";
 
-// // Next.js config to disable body parsing for file upload
-// export const config = {
-//   api: {
-//     bodyParser: false, // Disable default Next.js body parsing to allow formidable to handle it
-//   },
-// };
+const TEMP_DIR = path.join(process.cwd(), "public", "uploads");
 
-// const handler = nextConnect(); // Create a next-connect handler
+export async function POST(req: Request) {
+  try {
+    const formData = await req.formData();
+    const file = formData.get("file") as File;
 
-// handler.post((req: NextApiRequest, res: NextApiResponse) => {
-//   // Initialize formidable
-//   const form = formidable({
-//     maxFileSize: 50 * 1024 * 1024, // Set the max file size to 50MB
-//     keepExtensions: true,          // Keep file extensions
-//   });
+    if (!file) {
+      return new Response(JSON.stringify({ success: false, message: "No file uploaded" }), { status: 400 });
+    }
 
-//   // Parse the incoming request
-//   form.parse(req, (err, fields, files) => {
-//     if (err) {
-//       return res.status(400).json({ success: false, message: 'File upload error' });
-//     }
+    // Create file path
+    const fileName = file.name;
+    const filePath = path.join(TEMP_DIR, fileName);
 
-//     // Process the uploaded files
-//     return res.status(200).json({ success: true, message: 'File uploaded successfully', files });
-//   });
-// });
+    // Save the file to the server
+    const buffer = Buffer.from(await file.arrayBuffer());
+    fs.writeFileSync(filePath, buffer);
 
-// export default handler;  // Export the handler
+    // Return the path to the uploaded file
+    return new Response(JSON.stringify({ success: true, filePath }), { status: 200 });
+  } catch (error) {
+    console.error("Error in uploading file:", error);
+    return new Response(JSON.stringify({ success: false, message: "File upload failed" }), { status: 500 });
+  }
+}
