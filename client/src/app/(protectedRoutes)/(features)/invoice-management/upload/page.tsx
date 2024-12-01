@@ -88,6 +88,7 @@ export default function UploadInvoice() {
             toast.error(`Failed to upload ${fileObj.file.name}`);
             return { ...fileObj, progress: 0 };
           }
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
           toast.error(`Error uploading ${fileObj.file.name}`);
           return { ...fileObj, progress: 0 };
@@ -115,6 +116,7 @@ export default function UploadInvoice() {
       } else {
         toast.error("Failed to extract data.");
       }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       toast.error("Error extracting data.");
     }

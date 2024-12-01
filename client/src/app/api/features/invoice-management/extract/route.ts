@@ -1,24 +1,39 @@
-// /app/api/features/invoice-management/extract/route.ts
 import { extractInvoiceDataAction } from '@/app/(protectedRoutes)/(features)/invoice-management/actions/extractInvoiceData';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
-    const { filePath } = await req.json(); // Extract file path from request body
+    // Parse the incoming request body
+    const { filePath } = await req.json();
 
+    // Check if filePath is provided
     if (!filePath) {
-      return NextResponse.json({ success: false, message: 'No file path provided' }, { status: 400 });
+      return NextResponse.json(
+        { success: false, message: 'No file path provided' },
+        { status: 400 }
+      );
     }
 
+    // Call the action to extract invoice data
     const extractedData = await extractInvoiceDataAction(filePath);
 
-    // Return the extracted data
-    return NextResponse.json({
-      success: true,
-      extractedData, 
-    });
+    // Check if data extraction was successful
+    if (!extractedData.success) {
+      return NextResponse.json(extractedData, { status: 400 });
+    }
+
+    // Return the extracted data if successful
+    return NextResponse.json(
+      { success: true, data: extractedData.data },
+      { status: 200 }
+    );
   } catch (error) {
+    // Log the full error for debugging purposes
     console.error('Error extracting invoice data:', error);
-    return NextResponse.json({ success: false, message: 'Error extracting data' }, { status: 500 });
+
+    return NextResponse.json(
+      { success: false, message: 'Error extracting data' },
+      { status: 500 }
+    );
   }
 }
