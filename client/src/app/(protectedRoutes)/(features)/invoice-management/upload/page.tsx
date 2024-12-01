@@ -1,5 +1,4 @@
-// UploadInvoice.tsx
-
+// File: /components/UploadInvoice.tsx
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -88,7 +87,6 @@ export default function UploadInvoice() {
             toast.error(`Failed to upload ${fileObj.file.name}`);
             return { ...fileObj, progress: 0 };
           }
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
           toast.error(`Error uploading ${fileObj.file.name}`);
           return { ...fileObj, progress: 0 };
@@ -111,12 +109,12 @@ export default function UploadInvoice() {
       );
 
       if (response.data.success) {
-        setExtractedData(response.data.extractedData); // Store extracted data
+        // Store extracted data in the state correctly
+        setExtractedData(JSON.stringify(response.data.extractedData, null, 2)); // Pretty-print the data
         toast.success("Data extracted successfully!");
       } else {
         toast.error("Failed to extract data.");
       }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       toast.error("Error extracting data.");
     }
@@ -154,7 +152,7 @@ export default function UploadInvoice() {
             ) : (
               <p>Click to upload or drag and drop</p>
             )}
-            <p className="text-sm">Supported formats: JPEG, PNG, PDF, DOC</p>
+            <p className="text-sm text-gray-400">Max file size 50MB</p>
           </div>
 
           {/* File preview with upload progress */}
