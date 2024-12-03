@@ -1,4 +1,4 @@
-// File: /components/UploadInvoice.tsx
+// File: /app/upload/page.tsx
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import axios from "axios";
+import { useRouter } from "next/navigation"; // Using next/navigation for navigation
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "react-hot-toast";
@@ -25,6 +26,7 @@ export default function UploadInvoice() {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [extractedData, setExtractedData] = useState<string | null>(null);
   const maxFileSize = 50 * 1024 * 1024; // 50 MB
+  const router = useRouter();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const validFiles: FileWithPreview[] = [];
@@ -76,7 +78,7 @@ export default function UploadInvoice() {
             const updatedFileObj = {
               ...fileObj,
               progress: 100,
-              filePath: response.data.filePath, // Update with the server response path
+              filePath: response.data.filePath,
             };
 
             // Extract data after upload
@@ -109,9 +111,15 @@ export default function UploadInvoice() {
       );
 
       if (response.data.success) {
-        // Store extracted data in the state correctly
         setExtractedData(JSON.stringify(response.data.extractedData, null, 2)); // Pretty-print the data
         toast.success("Data extracted successfully!");
+
+        // Redirect to the validation page with extracted data
+        router.push(
+          `/invoice-management/upload/validate?data=${encodeURIComponent(
+            JSON.stringify(response.data.extractedData)
+          )}`
+        );
       } else {
         toast.error("Failed to extract data.");
       }
@@ -204,16 +212,6 @@ export default function UploadInvoice() {
           </Button>
         </CardFooter>
       </Card>
-
-      {/* Display the extracted data */}
-      <div className="m-4">
-        {extractedData && (
-          <div className="gap-4 flex flex-col mt-4 p-4 border rounded-md bg-gray-100 h-auto">
-            <h3 className="font-semibold">Extracted Data</h3>
-            <pre>{extractedData}</pre>
-          </div>
-        )}
-      </div>
     </div>
   );
 }

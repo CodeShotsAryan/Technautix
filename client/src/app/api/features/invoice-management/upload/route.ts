@@ -12,8 +12,11 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ success: false, message: "No file uploaded" }), { status: 400 });
     }
 
+
+
     // Create file path
     const fileName = file.name;
+    console.log('file name is ',fileName)
     const filePath = path.join(TEMP_DIR, fileName);
 
     // Save the file to the server
@@ -21,9 +24,11 @@ export async function POST(req: Request) {
     fs.writeFileSync(filePath, buffer);
 
     // Return the path to the uploaded file
-    return new Response(JSON.stringify({ success: true, filePath }), { status: 200 });
+    return new Response(JSON.stringify({ success: true, fileName ,filePath }), { status: 200 });
   } catch (error) {
+
     console.error("Error in uploading file:", error);
     return new Response(JSON.stringify({ success: false, message: "File upload failed" }), { status: 500 });
+
   }
 }
